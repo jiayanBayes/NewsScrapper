@@ -1,0 +1,45 @@
+# Java-specific files
+*.class                # Compiled Java class files
+*.jar                  # JAR files
+*.war                  # WAR files
+/bin/                  # Build directory for Java
+/target/               # Maven/Gradle build output
+
+# Python-specific files
+__pycache__/           # Python bytecode cache
+*.pyc                  # Compiled Python files
+*.pyo                  # Optimized Python bytecode files
+*.pyd                  # Compiled C extensions for Python
+
+# Virtual environment
+env/                   # Virtual environment folder
+venv/                  # Common virtual environment folder
+
+# Logs and temporary files
+*.log                  # Log files
+*.tmp                  # Temporary files
+*.swp                  # Swap files (e.g., Vim)
+.DS_Store              # macOS Finder metadata
+Thumbs.db              # Windows thumbnail cache
+
+# IDE-specific files
+.idea/                 # IntelliJ IDEA project files
+*.iml                  # IntelliJ module files
+.vscode/               # VSCode settings
+
+# Operating system-specific files
+.DS_Store              # macOS metadata files
+Thumbs.db              # Windows thumbnail cache
+
+# Database files
+*.db                   # SQLite database files
+*.sqlite               # SQLite database files
+/database/             # Ignore the entire database folder
+
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints/    # Jupyter Notebook checkpoints
+
+# Other dependencies
+/node_modules/         # Node.js dependencies, if any
+/package-lock.json     # npm lock file
+/pipfile.lock          # Pipenv lock file
