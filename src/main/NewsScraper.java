@@ -1,108 +1,89 @@
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.logging.LogEntries;
+import org.openqa.selenium.logging.LogEntry;
+import org.openqa.selenium.logging.LogType;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.logging.Level;
+import org.openqa.selenium.logging.LoggingPreferences;
+
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.List;
 
 public class NewsScraper {
 
-    // Method to scrape news from all categories
-    public List<News> scrapeAllCategories(String baseUrl) {
-        List<News> allNews = new ArrayList<>();
-
-        try {
-            // Fetch the HTML content of the base URL
-            Document doc = Jsoup.connect(baseUrl).get();
-
-            // Select all category links (e.g., tabs for A股, 宏观, 公司, etc.)
-            Elements categoryLinks = doc.select("div.nav a"); // Adjust selector to match category navigation links
-
-            // Iterate through each category link
-            for (Element categoryLink : categoryLinks) {
-                // Get the category URL and category name
-                String categoryUrl = categoryLink.absUrl("href"); // Get absolute URL for the category
-                String categoryName = categoryLink.text(); // Get the category name (e.g., "A股", "宏观")
-
-                System.out.println("Scraping category: " + categoryName);
-
-                // Scrape news for the current category
-                List<News> categoryNews = scrapeNews(categoryUrl, categoryName);
-                allNews.addAll(categoryNews); // Add the category's news to the overall list
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return allNews;
-    }
-
-    // Method to scrape news for a specific category
-    public List<News> scrapeNews(String categoryUrl, String categoryName) {
-        List<News> newsList = new ArrayList<>();
-
-        try {
-            // Fetch the HTML content of the category page
-            Document doc = Jsoup.connect(categoryUrl).get();
-
-            // Select news items based on their HTML structure
-            Elements newsItems = doc.select(".item-container"); // Adjust the selector to match news items
-
-            for (Element item : newsItems) {
-                // Extract time
-                String timeText = item.select(".time-class").text(); // Adjust class or tag selector
-                Timestamp newsTime = Timestamp.valueOf("2025-01-12 " + timeText);
-
-                // Extract content
-                String content = item.select(".content-class").text(); // Adjust class or tag selector
-
-                // Add the news item to the list
-                newsList.add(new News(newsTime, categoryName, content));
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return newsList;
-    }
-
     public static void main(String[] args) {
-        // Define the base URL of the Sina Finance news page
-        String baseUrl = "https://finance.sina.com.cn/7x24/";
+        // Step 1: Set up WebDriver
+        System.setProperty("webdriver.chrome.driver", "C:\\Users\\jiay\\JavaCourse\\NewsScrapper\\tools\\chromedriver-win64\\chromedriver.exe");
 
-        // Create an instance of the scraper
-        NewsScraper scraper = new NewsScraper();
+        ChromeOptions options = new ChromeOptions();
+        LoggingPreferences logPrefs = new LoggingPreferences();
+        logPrefs.enable(LogType.PERFORMANCE, Level.ALL);
+        options.setCapability("goog:loggingPrefs", logPrefs);
 
-        // Scrape news from all categories starting from the base URL
-        List<News> allNews = scraper.scrapeAllCategories(baseUrl);
+        WebDriver driver = new ChromeDriver(options);
 
-        // Print the scraped news
-        for (News news : allNews) {
-            System.out.println(news);
+        Set<String> dynamicUrls = new HashSet<>();
+
+        try {
+            // Open the main page
+            driver.get("https://finance.sina.com.cn/7x24/");
+
+            // Wait for the page to fully load
+            Thread.sleep(600000);
+
+            // Extract URLs from network logs
+            LogEntries logs = driver.manage().logs().get(LogType.PERFORMANCE);
+            for (LogEntry entry : logs) {
+                String message = entry.getMessage();
+                if (message.contains("zhibo.sina.com.cn/api/zhibo/feed")) {
+                    int urlStartIndex = message.indexOf("https://");
+                    int urlEndIndex = message.indexOf("\"", urlStartIndex);
+                    if (urlStartIndex != -1 && urlEndIndex != -1) {
+                        String url = message.substring(urlStartIndex, urlEndIndex);
+                        dynamicUrls.add(url);
+                    }
+                }
+            }
+
+            // Step 2: Scrape news from URLs while WebDriver is still active
+            for (String url : dynamicUrls) {
+                scrapeNewsFromUrl(url);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            // Quit WebDriver after scraping is complete
+            driver.quit();
         }
     }
-}
 
-// News class to represent a news item
-class News {
-    private Timestamp newsTime;
-    private String category;
-    private String content;
+    /**
+     * Scrapes news data from a given URL.
+     */
+    private static void scrapeNewsFromUrl(String url) {
+        try {
+            System.out.println("Fetching data from: " + url);
 
-    public News(Timestamp newsTime, String category, String content) {
-        this.newsTime = newsTime;
-        this.category = category;
-        this.content = content;
-    }
+            // Fetch the content of the URL
+            Document doc = Jsoup.connect(url)
+                    .ignoreContentType(true) // Handle JSON responses
+                    .get();
 
-    @Override
-    public String toString() {
-        return "News{" +
-                "newsTime=" + newsTime +
-                ", category='" + category + '\'' +
-                ", content='" + content + '\'' +
-                '}';
+            // Parse the JSON response (e.g., using Jsoup or a JSON library like Jackson/Gson)
+            String json = doc.body().text();
+            System.out.println("Response JSON: " + json);
+
+            // Use a JSON library to parse and extract news items
+            // Example: Extract specific fields like title, timestamp, content, etc.
+
+        } catch (Exception e) {
+            System.err.println("Failed to fetch data from: " + url);
+            e.printStackTrace();
+        }
     }
 }
