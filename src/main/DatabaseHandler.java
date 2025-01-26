@@ -148,4 +148,17 @@ public class DatabaseHandler {
         }
         return newsList;
     }
+
+    public void EmptyDatabase(){
+        String deleteSQL = "DELETE FROM news";
+        
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+             Statement stmt = conn.createStatement()) {
+            
+            stmt.executeUpdate(deleteSQL);
+            System.out.println("Database emptied");
+        } catch (SQLException e) {
+        e.printStackTrace();
+        }
+    }
 }
