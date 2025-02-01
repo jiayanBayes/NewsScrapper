@@ -17,4 +17,8 @@ dependencies {
     
     // Selenium dependency
     implementation 'org.seleniumhq.selenium:selenium-java:4.28.1'
+
+    // Test framework dependency
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.3' // Or any other test framework
 }
+

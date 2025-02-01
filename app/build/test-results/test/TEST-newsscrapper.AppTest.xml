@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="newsscrapper.AppTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2025-02-01T17:12:45" hostname="JiayWSU" time="0.001">
+  <properties/>
+  <testcase name="appHasAGreeting" classname="newsscrapper.AppTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
