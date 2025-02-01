@@ -1,0 +1,20 @@
+plugins {
+    id 'java'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Jackson dependencies
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.18.2'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.18.2'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.2'
+    
+    // Jsoup dependency
+    implementation 'org.jsoup:jsoup:1.18.3'
+    
+    // Selenium dependency
+    implementation 'org.seleniumhq.selenium:selenium-java:4.28.1'
+}
