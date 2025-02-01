@@ -18,7 +18,7 @@ public class NewsScraper {
 
     public static void main(String[] args) {
         // Step 1: Set up WebDriver
-        System.setProperty("webdriver.chrome.driver", "C:\\Users\\jiay\\JavaCourse\\NewsScrapper\\tools\\chromedriver-win64\\chromedriver.exe");
+        System.setProperty("webdriver.chrome.driver", "/home/jiay/NewsScrapper/tools/chromedriver");
 
         ChromeOptions options = new ChromeOptions();
         LoggingPreferences logPrefs = new LoggingPreferences();
