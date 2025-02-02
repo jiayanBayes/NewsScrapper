@@ -1,6 +1,9 @@
 import java.sql.Timestamp;
 import java.util.List;
 
+import database.DatabaseHandler;
+import database.News;
+
 public class DatabaseHandlerTest {
     public static void main(String[] args) {
         // Step 1: Initialize the DatabaseHandler

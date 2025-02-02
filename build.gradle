@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'application' // Add the application plugin
 }
 
 repositories {
@@ -22,3 +23,11 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.9.3' // Or any other test framework
 }
 
+application {
+    // Specify the fully qualified name of your main class
+    mainClass = 'scraping.RealtimeNewsScraper'
+}
+
+test {
+    useJUnitPlatform() // For running JUnit 5 tests
+}
