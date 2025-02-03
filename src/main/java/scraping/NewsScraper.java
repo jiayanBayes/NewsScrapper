@@ -7,7 +7,9 @@ import org.openqa.selenium.logging.LogEntries;
 import org.openqa.selenium.logging.LogEntry;
 import org.openqa.selenium.logging.LogType;
 
+import java.io.InputStream;
 import java.util.HashSet;
+import java.util.Properties;
 import java.util.Set;
 import java.util.logging.Level;
 import org.openqa.selenium.logging.LoggingPreferences;
@@ -18,8 +20,20 @@ import org.jsoup.nodes.Document;
 public class NewsScraper {
 
     public static void main(String[] args) {
+        Properties config = loadConfig("config_sina_news.properties");
+        if (config == null) {
+            System.err.println("Failed to load configuration. Exiting...");
+            return;
+        }
+
+        // Load configuration values
+        String driverPath = config.getProperty("driverPath");
+        String targetUrl = config.getProperty("targetUrl");
+        int pollInterval = Integer.parseInt(config.getProperty("pollInterval")) * 1000; // Convert to milliseconds
+        String dynamicUrlPattern = config.getProperty("dynamicUrl");
+
         // Step 1: Set up WebDriver
-        System.setProperty("webdriver.chrome.driver", "/home/jiay/NewsScrapper/tools/chromedriver");
+        System.setProperty("webdriver.chrome.driver", driverPath);
 
         ChromeOptions options = new ChromeOptions();
         LoggingPreferences logPrefs = new LoggingPreferences();
@@ -32,16 +46,16 @@ public class NewsScraper {
 
         try {
             // Open the main page
-            driver.get("https://finance.sina.com.cn/7x24/");
+            driver.get(targetUrl);
 
             // Wait for the page to fully load
-            Thread.sleep(600000);
+            Thread.sleep(pollInterval);
 
             // Extract URLs from network logs
             LogEntries logs = driver.manage().logs().get(LogType.PERFORMANCE);
             for (LogEntry entry : logs) {
                 String message = entry.getMessage();
-                if (message.contains("zhibo.sina.com.cn/api/zhibo/feed")) {
+                if (message.contains(dynamicUrlPattern)) {
                     int urlStartIndex = message.indexOf("https://");
                     int urlEndIndex = message.indexOf("\"", urlStartIndex);
                     if (urlStartIndex != -1 && urlEndIndex != -1) {
@@ -86,6 +100,25 @@ public class NewsScraper {
         } catch (Exception e) {
             System.err.println("Failed to fetch data from: " + url);
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * Loads configuration from a file in the resources directory.
+     */
+    private static Properties loadConfig(String configFilePath) {
+        Properties properties = new Properties();
+        try (InputStream input = NewsScraper.class.getClassLoader().getResourceAsStream(configFilePath)) {
+            if (input == null) {
+                System.err.println("Configuration file not found: " + configFilePath);
+                return null;
+            }
+            properties.load(input);
+            return properties;
+        } catch (Exception e) {
+            System.err.println("Error loading configuration file: " + configFilePath);
+            e.printStackTrace();
+            return null;
         }
     }
 }
