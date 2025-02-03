@@ -21,6 +21,9 @@ dependencies {
 
     // Test framework dependency
     testImplementation 'org.junit.jupiter:junit-jupiter:5.9.3' // Or any other test framework
+
+    // CouchDB dependency (Ektorp library for CouchDB interactions)
+    implementation 'org.ektorp:org.ektorp:1.5.0'
 }
 
 application {
@@ -30,4 +33,30 @@ application {
 
 test {
     useJUnitPlatform() // For running JUnit 5 tests
+}
+
+// Task to check if CouchDB is running
+tasks.register('checkCouchDB') {
+    doLast {
+        def couchdbUrl = 'http://127.0.0.1:5984/'
+        try {
+            def connection = new URL(couchdbUrl).openConnection()
+            connection.setRequestMethod('GET')
+            connection.connect()
+            if (connection.getResponseCode() == 200) {
+                println("CouchDB is running at ${couchdbUrl}")
+            } else {
+                println("CouchDB responded with status code: ${connection.getResponseCode()}")
+                throw new GradleException("CouchDB is not running. Please start CouchDB before running the application.")
+            }
+        } catch (Exception e) {
+            println("Failed to connect to CouchDB: ${e.message}")
+            throw new GradleException("CouchDB is not running. Please start CouchDB before running the application.")
+        }
+    }
+}
+
+// Make the 'run' task depend on 'checkCouchDB'
+tasks.named('run') {
+    dependsOn 'checkCouchDB'
 }
