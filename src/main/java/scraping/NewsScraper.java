@@ -16,6 +16,7 @@ import org.ektorp.impl.StdCouchDbConnector;
 import org.ektorp.impl.StdCouchDbInstance;
 
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -103,12 +104,13 @@ public class NewsScraper {
         try {
             System.out.println("Fetching data from: " + url);
 
+            // Fetch the content of the URL with Jsoup
             Document doc = Jsoup.connect(url)
                     .ignoreContentType(true) // Handle JSON responses
                     .get();
 
-            // Parse the JSON response
-            String json = doc.body().text();
+            // Parse the JSON response as a UTF-8 encoded string
+            String json = new String(doc.body().text().getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
 
             // Create a map to store the scraped news
             Map<String, Object> newsDoc = new HashMap<>();

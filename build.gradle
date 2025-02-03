@@ -24,6 +24,9 @@ dependencies {
 
     // CouchDB dependency (Ektorp library for CouchDB interactions)
     implementation 'org.ektorp:org.ektorp:1.5.0'
+
+    // scheduling librar
+    implementation 'org.quartz-scheduler:quartz:2.3.2'
 }
 
 application {
