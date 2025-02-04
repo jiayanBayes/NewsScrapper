@@ -8,30 +8,30 @@ repositories {
 }
 
 dependencies {
-    // Jackson dependencies
+    // Jackson dependencies for JSON handling
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.18.2'
     implementation 'com.fasterxml.jackson.core:jackson-core:2.18.2'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.2'
 
-    // Jsoup dependency
+    // Jsoup dependency for HTML parsing
     implementation 'org.jsoup:jsoup:1.18.3'
 
-    // Selenium dependency
+    // Selenium dependency for browser automation
     implementation 'org.seleniumhq.selenium:selenium-java:4.28.1'
 
     // Test framework dependency
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.3' // Or any other test framework
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.3'
 
     // CouchDB dependency (Ektorp library for CouchDB interactions)
     implementation 'org.ektorp:org.ektorp:1.5.0'
 
-    // scheduling librar
+    // Quartz Scheduler library for scheduling jobs
     implementation 'org.quartz-scheduler:quartz:2.3.2'
 }
 
 application {
     // Specify the fully qualified name of your main class
-    mainClass = 'scraping.NewsScraper'
+    mainClass = 'scraping.SchedulerApp'
 }
 
 test {

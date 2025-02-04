@@ -1,4 +1,6 @@
 package scraping;
+import database.CouchDbConnectorUtil;
+import utils.HumanSimulator;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -17,6 +19,8 @@ import org.ektorp.impl.StdCouchDbInstance;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -28,7 +32,7 @@ import org.openqa.selenium.logging.LoggingPreferences;
 public class NewsScraper {
 
     public static void main(String[] args) {
-        Properties config = loadConfig("config_sina_news.properties");
+        Properties config = ConfigLoader.loadConfig("config_sina_news.properties");
         if (config == null) {
             System.err.println("Failed to load configuration. Exiting...");
             return;
@@ -51,7 +55,7 @@ public class NewsScraper {
         }
 
         // Connect to CouchDB
-        CouchDbConnector db = connectToCouchDB(couchdbUrl, databaseName, couchdbUsername, couchdbPassword);
+        CouchDbConnector db = CouchDbConnectorUtil.connectToCouchDB(couchdbUrl, databaseName, couchdbUsername, couchdbPassword);
         if (db == null) {
             System.err.println("Failed to connect to CouchDB. Exiting...");
             return;
@@ -65,10 +69,17 @@ public class NewsScraper {
         options.setCapability("goog:loggingPrefs", logPrefs);
 
         WebDriver driver = new ChromeDriver(options);
+        HumanSimulator simulator = new HumanSimulator(driver); // Instantiate the HumanSimulator
         Set<String> dynamicUrls = new HashSet<>();
 
         try {
             driver.get(targetUrl);
+            // Simulate human behavior while waiting for dynamic content to load
+            simulator.simulateScroll();       // Simulate scrolling behavior
+            simulator.simulateMouseMovement(); // Simulate mouse movement
+            simulator.simulateKeyPress();     // Simulate key presses (e.g., PAGE_DOWN)
+            simulator.simulateDelay();        // Add a random delay for more human-like interaction
+            
             Thread.sleep(pollInterval);
 
             // Extract URLs from network logs
@@ -116,8 +127,10 @@ public class NewsScraper {
             Map<String, Object> newsDoc = new HashMap<>();
             newsDoc.put("url", url);
             newsDoc.put("data", json);
-            newsDoc.put("timestamp", System.currentTimeMillis());
-
+            // Store a human-readable timestamp
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            newsDoc.put("timestamp", sdf.format(new Date(System.currentTimeMillis())));
+            
             // Save the news to CouchDB
             db.create(newsDoc);
             System.out.println("Saved news to CouchDB: " + url);
@@ -125,48 +138,6 @@ public class NewsScraper {
         } catch (Exception e) {
             System.err.println("Failed to fetch and save data from: " + url);
             e.printStackTrace();
-        }
-    }
-
-    /**
-     * Connects to CouchDB and returns a CouchDbConnector instance.
-     */
-    private static CouchDbConnector connectToCouchDB(String url, String databaseName, String username, String password) {
-        try {
-            HttpClient httpClient = new StdHttpClient.Builder()
-                    .url(url)
-                    .username(username)
-                    .password(password)
-                    .build();
-
-            CouchDbInstance dbInstance = new StdCouchDbInstance(httpClient);
-            CouchDbConnector db = new StdCouchDbConnector(databaseName, dbInstance);
-            db.createDatabaseIfNotExists();
-            System.out.println("Connected to CouchDB: " + databaseName);
-            return db;
-        } catch (Exception e) {
-            System.err.println("Error connecting to CouchDB: " + e.getMessage());
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    /**
-     * Loads configuration from a file in the resources directory.
-     */
-    private static Properties loadConfig(String configFilePath) {
-        Properties properties = new Properties();
-        try (InputStream input = NewsScraper.class.getClassLoader().getResourceAsStream(configFilePath)) {
-            if (input == null) {
-                System.err.println("Configuration file not found: " + configFilePath);
-                return null;
-            }
-            properties.load(input);
-            return properties;
-        } catch (Exception e) {
-            System.err.println("Error loading configuration file: " + configFilePath);
-            e.printStackTrace();
-            return null;
         }
     }
 }

@@ -7,12 +7,9 @@ import org.ektorp.http.StdHttpClient;
 import org.ektorp.impl.StdCouchDbConnector;
 import org.ektorp.impl.StdCouchDbInstance;
 
-public class CouchDBConnector {
+public class CouchDbConnectorUtil {
 
-    /**
-     * Connects to CouchDB and returns a CouchDbConnector instance.
-     */
-    public static CouchDbConnector connect(String url, String databaseName, String username, String password) {
+    public static CouchDbConnector connectToCouchDB(String url, String databaseName, String username, String password) {
         try {
             HttpClient httpClient = new StdHttpClient.Builder()
                     .url(url)
@@ -22,6 +19,7 @@ public class CouchDBConnector {
 
             CouchDbInstance dbInstance = new StdCouchDbInstance(httpClient);
             CouchDbConnector db = new StdCouchDbConnector(databaseName, dbInstance);
+            db.createDatabaseIfNotExists();
             System.out.println("Connected to CouchDB: " + databaseName);
             return db;
         } catch (Exception e) {
