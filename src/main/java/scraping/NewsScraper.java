@@ -1,7 +1,6 @@
 package scraping;
-import database.CouchDbConnectorUtil;
-import utils.HumanSimulator;
 
+import database.CouchDbConnectorUtil;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.openqa.selenium.WebDriver;
@@ -11,21 +10,11 @@ import org.openqa.selenium.logging.LogEntries;
 import org.openqa.selenium.logging.LogEntry;
 import org.openqa.selenium.logging.LogType;
 import org.ektorp.CouchDbConnector;
-import org.ektorp.CouchDbInstance;
-import org.ektorp.http.HttpClient;
-import org.ektorp.http.StdHttpClient;
-import org.ektorp.impl.StdCouchDbConnector;
-import org.ektorp.impl.StdCouchDbInstance;
+import utils.HumanSimulator;
 
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Level;
 import org.openqa.selenium.logging.LoggingPreferences;
 
@@ -74,26 +63,33 @@ public class NewsScraper {
 
         try {
             driver.get(targetUrl);
-            // Simulate human behavior while waiting for dynamic content to load
-            simulator.simulateScroll();       // Simulate scrolling behavior
-            simulator.simulateMouseMovement(); // Simulate mouse movement
-            simulator.simulateKeyPress();     // Simulate key presses (e.g., PAGE_DOWN)
-            simulator.simulateDelay();        // Add a random delay for more human-like interaction
-            
-            Thread.sleep(pollInterval);
 
-            // Extract URLs from network logs
-            LogEntries logs = driver.manage().logs().get(LogType.PERFORMANCE);
-            for (LogEntry entry : logs) {
-                String message = entry.getMessage();
-                if (message.contains(dynamicUrlPattern)) {
-                    int urlStartIndex = message.indexOf("https://");
-                    int urlEndIndex = message.indexOf("\"", urlStartIndex);
-                    if (urlStartIndex != -1 && urlEndIndex != -1) {
-                        String url = message.substring(urlStartIndex, urlEndIndex);
-                        dynamicUrls.add(url);
+            long startTime = System.currentTimeMillis();
+            long endTime = startTime + pollInterval;
+            Random random = new Random();
+
+            while (System.currentTimeMillis() < endTime) {
+                // Alternate between simulator actions and checking for URLs
+                simulator.simulateScroll();        // Perform a scroll
+                simulator.simulateKeyPress();      // Simulate a key press
+
+                // Check for new dynamic URLs
+                LogEntries logs = driver.manage().logs().get(LogType.PERFORMANCE);
+                for (LogEntry entry : logs) {
+                    String message = entry.getMessage();
+                    if (message.contains(dynamicUrlPattern)) {
+                        int urlStartIndex = message.indexOf("https://");
+                        int urlEndIndex = message.indexOf("\"", urlStartIndex);
+                        if (urlStartIndex != -1 && urlEndIndex != -1) {
+                            String url = message.substring(urlStartIndex, urlEndIndex);
+                            dynamicUrls.add(url);
+                            System.out.println("Captured URL: " + url);
+                        }
                     }
                 }
+
+                // Simulate human-like delays
+                Thread.sleep(random.nextInt(3000) + 1000); // Wait 1-4 seconds
             }
 
             // Scrape news and save to CouchDB
