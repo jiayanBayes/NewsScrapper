@@ -10,7 +10,7 @@ dependencies {
 
 application {
     // Specify the fully qualified main class for the application
-    mainClass = 'scraping.SchedulerApp'
+    mainClass = 'sinanews.scraping.SchedulerApp'
 }
 
 // Ensure the `run` task depends on the `checkCouchDB` task defined in the root project

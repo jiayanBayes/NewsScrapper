@@ -17,5 +17,8 @@ dependencies {
     // Optional: Other shared libraries, such as Jsoup or Selenium (if applicable across scrapers)
     api 'org.jsoup:jsoup:1.18.3'
     api 'org.seleniumhq.selenium:selenium-java:4.28.1'
+
+    // SLF4J (a logging framework) 
+    api 'ch.qos.logback:logback-classic:1.4.11' 
 }
 
