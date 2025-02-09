@@ -34,7 +34,7 @@ public class NewsScraper {
         int pollInterval = Integer.parseInt(config.getProperty("pollInterval")) * 1000; // Convert to milliseconds
         String dynamicUrlPattern = config.getProperty("dynamicUrl");
         String couchdbUrl = config.getProperty("couchdb.url");
-        String databaseName = config.getProperty("couchdb.database");
+        String databaseName = config.getProperty("couchdb.database_raw");
 
         // Fetch CouchDB credentials from environment variables
         String couchdbUsername = System.getenv("COUCHDB_USERNAME");
