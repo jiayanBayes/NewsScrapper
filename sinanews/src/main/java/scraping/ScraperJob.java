@@ -1,4 +1,4 @@
-package scraping;
+package sinanews.scraping;
 
 import java.time.LocalDateTime;
 

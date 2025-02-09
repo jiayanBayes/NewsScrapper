@@ -1,6 +1,8 @@
-package scraping;
+package sinanews.scraping;
 
-import database.CouchDbConnectorUtil;
+import common.database.CouchDbConnectorUtil;
+import common.utils.HumanSimulator;
+import common.scraping.ConfigLoader;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.openqa.selenium.WebDriver;
@@ -10,7 +12,6 @@ import org.openqa.selenium.logging.LogEntries;
 import org.openqa.selenium.logging.LogEntry;
 import org.openqa.selenium.logging.LogType;
 import org.ektorp.CouchDbConnector;
-import utils.HumanSimulator;
 
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;

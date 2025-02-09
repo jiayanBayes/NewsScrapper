@@ -1,10 +1,9 @@
-package datacleaning;
+package sinanews.datacleaning;
 
-import database.CouchDbConnectorUtil;
+import common.database.CouchDbConnectorUtil;
+import common.scraping.ConfigLoader;
 import org.ektorp.CouchDbConnector;
 import org.ektorp.ViewQuery;
-import scraping.ConfigLoader;
-
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;

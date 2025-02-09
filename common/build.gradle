@@ -1,21 +1,21 @@
 plugins {
-    id 'java'
+    id 'java-library'
 }
 
 dependencies {
     // Shared JSON handling dependencies
-    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.18.2'
-    implementation 'com.fasterxml.jackson.core:jackson-core:2.18.2'
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.2'
+    api 'com.fasterxml.jackson.core:jackson-annotations:2.18.2'
+    api 'com.fasterxml.jackson.core:jackson-core:2.18.2'
+    api 'com.fasterxml.jackson.core:jackson-databind:2.18.2'
 
     // Shared CouchDB interaction library
-    implementation 'org.ektorp:org.ektorp:1.5.0'
+    api 'org.ektorp:org.ektorp:1.5.0'
 
     // Quartz Scheduler library for scheduling jobs
-    implementation 'org.quartz-scheduler:quartz:2.3.2'
+    api 'org.quartz-scheduler:quartz:2.3.2'
 
     // Optional: Other shared libraries, such as Jsoup or Selenium (if applicable across scrapers)
-    implementation 'org.jsoup:jsoup:1.18.3'
-    implementation 'org.seleniumhq.selenium:selenium-java:4.28.1'
+    api 'org.jsoup:jsoup:1.18.3'
+    api 'org.seleniumhq.selenium:selenium-java:4.28.1'
 }
 

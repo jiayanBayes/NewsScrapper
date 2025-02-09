@@ -1,5 +1,6 @@
-package scraping;
+package sinanews.scraping;
 
+import common.scraping.ConfigLoader;
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
 

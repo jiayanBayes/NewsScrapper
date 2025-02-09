@@ -1,4 +1,4 @@
-package database;
+package sinanews.database;
 
 public class NewsDoc {
     private String _id;
