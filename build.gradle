@@ -7,11 +7,18 @@ allprojects {
 subprojects {
     apply plugin: 'java'
 
+    // Common dependencies for all subprojects
     dependencies {
         testImplementation 'org.junit.jupiter:junit-jupiter:5.9.3'
     }
+
+    // Common test configurations
+    test {
+        useJUnitPlatform()
+    }
 }
 
+// Task to check CouchDB at the root level if needed by multiple subprojects
 tasks.register('checkCouchDB') {
     doLast {
         def couchdbUrl = 'http://127.0.0.1:5984/'
@@ -29,5 +36,12 @@ tasks.register('checkCouchDB') {
             println("Failed to connect to CouchDB: ${e.message}")
             throw new GradleException("CouchDB is not running. Please start CouchDB before running the application.")
         }
+    }
+}
+
+// Allow all subprojects to depend on the `checkCouchDB` task
+subprojects {
+    tasks.named('run').configure {
+        dependsOn rootProject.tasks.named('checkCouchDB')
     }
 }
