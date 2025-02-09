@@ -11,4 +11,7 @@ plugins {
 }
 
 rootProject.name = "NewsScrapper"
-include("app")
+
+// Include subprojects
+include("common")
+include("sinanews")
