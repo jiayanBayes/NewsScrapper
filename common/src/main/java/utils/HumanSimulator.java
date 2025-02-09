@@ -1,4 +1,4 @@
-package utils;
+package common.utils;
 
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
