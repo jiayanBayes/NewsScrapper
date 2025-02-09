@@ -1,4 +1,4 @@
-package scraping;
+package common.scraping;
 
 import java.io.InputStream;
 import java.util.Properties;

@@ -1,4 +1,4 @@
-package database;
+package common.database;
 
 import org.ektorp.CouchDbConnector;
 import org.ektorp.CouchDbInstance;
