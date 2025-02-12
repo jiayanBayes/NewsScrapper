@@ -1,143 +1,133 @@
 package sinanews.datacleaning;
 
-import common.database.CouchDbConnectorUtil;
-import common.scraping.ConfigLoader;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.ektorp.CouchDbConnector;
 import org.ektorp.ViewQuery;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public class DataCleaner {
 
-    public static void main(String[] args) {
-        // 1. Load the config file
-        Properties config = ConfigLoader.loadConfig("config_sina_news.properties");
-        if (config == null) {
-            System.err.println("Failed to load config file. Exiting...");
-            return;
+    private static final Logger logger = LoggerFactory.getLogger(DataCleaner.class);
+    
+    // Configure ObjectMapper to ignore unknown properties
+    private static final ObjectMapper objectMapper = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+    /**
+     * Cleans and saves data from the source DB to the target DB.
+     * Additionally, deletes documents from the source DB whose top-level "url"
+     * field matches the specified urlToDelete.
+     *
+     * @param sourceDb    the source CouchDbConnector
+     * @param targetDb    the target CouchDbConnector
+     * @param urlToDelete the URL string; documents with a matching "url" will be deleted
+     */
+    public static void cleanAndSave(CouchDbConnector sourceDb, CouchDbConnector targetDb, String urlToDelete) {
+        logger.info("Cleaning and saving data...");
+
+        // 1. Build a query for all documents and include full documents.
+        ViewQuery query = new ViewQuery().allDocs().includeDocs(true);
+
+        // 2. Fetch raw documents from the source DB.
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> docList = sourceDb.queryView(query, (Class<Map<String, Object>>)(Class<?>) Map.class);
+
+        // 2.1. Delete documents with a top-level "url" matching urlToDelete and remove them from docList.
+        if (urlToDelete != null && !urlToDelete.isEmpty()) {
+            Iterator<Map<String, Object>> iter = docList.iterator();
+            while (iter.hasNext()) {
+                Map<String, Object> doc = iter.next();
+                Object urlObj = doc.get("url");
+                if (urlObj != null && urlObj.equals(urlToDelete)) {
+                    try {
+                        sourceDb.delete(doc);
+                        logger.info("Deleted document with url: {}", urlToDelete);
+                        iter.remove();
+                    } catch (Exception e) {
+                        logger.error("Error deleting document with url {}: {}", urlToDelete, e.getMessage(), e);
+                    }
+                }
+            }
         }
 
-        // 2. Get database configuration
-        String couchdbUrl   = config.getProperty("couchdb.url");
-        String sourceDbName = config.getProperty("couchdb.database_raw");
-        String targetDbName = config.getProperty("couchdb.database_cleaned");
-
-        // 3. Retrieve CouchDB credentials from environment variables
-        String username = System.getenv("COUCHDB_USERNAME");
-        String password = System.getenv("COUCHDB_PASSWORD");
-
-        // 4. Connect to source & target DBs
-        CouchDbConnector sourceDb = CouchDbConnectorUtil.connectToCouchDB(
-            couchdbUrl, sourceDbName, username, password
-        );
-        CouchDbConnector targetDb = CouchDbConnectorUtil.connectToCouchDB(
-            couchdbUrl, targetDbName, username, password
-        );
-
-        if (sourceDb == null || targetDb == null) {
-            System.err.println("Could not connect to one or both databases. Exiting...");
-            return;
-        }
-
-        // 5. Clean and save
-        cleanAndSave(sourceDb, targetDb);
-    }
-
-    private static void cleanAndSave(CouchDbConnector sourceDb, CouchDbConnector targetDb) {
-        System.out.println("Cleaning and saving data...");
-    
-        // 1. Build a query for all docs
-        ViewQuery query = new ViewQuery()
-                .allDocs()
-                .includeDocs(true);
-    
-        // 2. Fetch as a raw untyped list to avoid the inference error
-        List<?> rawList = sourceDb.queryView(query, Map.class);
-    
-        // 3. Cast each element to Map<String,Object>
-        List<Map<String, Object>> docList = new ArrayList<>();
-        for (Object o : rawList) {
-            @SuppressWarnings("unchecked") // We know they're Map<String,Object> from CouchDB
-            Map<String, Object> doc = (Map<String, Object>) o;
-            docList.add(doc);
-        }
-    
-        // 4. Collect all "data" fields into a single list
-        List<Map<String, Object>> stackedData = new ArrayList<>();
+        // 3. Convert raw "data" fields to domain objects using Jackson.
+        List<DocumentData> documentDataList = new ArrayList<>();
         for (Map<String, Object> doc : docList) {
             if (doc != null && doc.containsKey("data")) {
                 Object dataObj = doc.get("data");
                 if (dataObj instanceof Map) {
-                    stackedData.add((Map<String, Object>) dataObj);
+                    try {
+                        DocumentData data = objectMapper.convertValue(dataObj, DocumentData.class);
+                        documentDataList.add(data);
+                    } catch (IllegalArgumentException e) {
+                        logger.warn("Failed to convert document 'data' field to DocumentData: {}", e.getMessage());
+                    }
+                } else {
+                    logger.warn("Expected 'data' field to be a Map but found: {}",
+                                (dataObj != null ? dataObj.getClass().getName() : "null"));
                 }
             }
         }
-    
-        // 5. Deduplicate feed items by "docurl"
-        Map<String, Map<String, Object>> deduplicatedDataMap = new LinkedHashMap<>();
-        for (Map<String, Object> data : stackedData) {
-            if (data == null) continue;
-    
-            // "feed" is presumably a nested map
-            Map<String, Object> feed = (Map<String, Object>) data.get("feed");
-            if (feed == null) continue;
-    
-            // feed["list"] is presumably a List<Map<String,Object>>
-            Object feedListObj = feed.get("list");
-            if (!(feedListObj instanceof List)) continue;
-    
-            List<Map<String, Object>> feedList = (List<Map<String, Object>>) feedListObj;
-            for (Map<String, Object> item : feedList) {
-                String docUrl = (String) item.get("docurl");
-                if (docUrl != null) {
-                    deduplicatedDataMap.put(docUrl, item);
+
+        // 4. Deduplicate feed items by "docurl" using the domain objects.
+        Map<String, FeedItem> deduplicatedDataMap = new LinkedHashMap<>();
+        for (DocumentData documentData : documentDataList) {
+            if (documentData == null) continue;
+            
+            Feed feed = documentData.getFeed();
+            if (feed == null) {
+                logger.warn("DocumentData is missing a feed");
+                continue;
+            }
+            List<FeedItem> feedList = feed.getList();
+            if (feedList == null) {
+                logger.warn("Feed is missing a list");
+                continue;
+            }
+            for (FeedItem item : feedList) {
+                if (item != null && item.getDocurl() != null) {
+                    deduplicatedDataMap.put(item.getDocurl(), item);
                 }
             }
         }
-    
-        // 6. Reconstruct a final "data" structure (this is just an example format)
+
+        // 5. Reconstruct the final "data" structure using mutable maps.
+        Map<String, Object> pageInfo = new HashMap<>();
+        pageInfo.put("totalPage", 1);
+        pageInfo.put("pageSize", deduplicatedDataMap.size());
+        pageInfo.put("totalNum", deduplicatedDataMap.size());
+
+        Map<String, Object> feedMap = new HashMap<>();
+        feedMap.put("list", new ArrayList<>(deduplicatedDataMap.values()));
+        feedMap.put("html", "");
+        feedMap.put("page_info", pageInfo);
+
         Map<String, Object> finalData = new HashMap<>();
-        finalData.put("zhibo", new ArrayList<>());
-        finalData.put("focus", new ArrayList<>());
-        finalData.put("top", Map.of(
-                "list", new ArrayList<>(),
-                "html", "",
-                "top_ids", "",
-                "survey_id", new ArrayList<>()
-        ));
-        finalData.put("feed", Map.of(
-                "list", new ArrayList<>(deduplicatedDataMap.values()),
-                "html", "",
-                "page_info", Map.of(
-                        "totalPage", 1,
-                        "pageSize", deduplicatedDataMap.size(),
-                        "prePage", 0,
-                        "nextPage", 0,
-                        "firstPage", 1,
-                        "lastPage", 1,
-                        "totalNum", deduplicatedDataMap.size(),
-                        "pName", "page",
-                        "page", 1
-                )
-        ));
-    
-        // 7. Generate a UUID and timestamp
+        finalData.put("feed", feedMap);
+
+        // 6. Generate a UUID and a timestamp.
         String uniqueId = UUID.randomUUID().toString();
         String cleanedDate = ZonedDateTime.now().format(DateTimeFormatter.ISO_INSTANT);
-    
-        // 8. Build the cleaned doc
+
+        // 7. Build the cleaned document.
         Map<String, Object> cleanedDoc = new HashMap<>();
         cleanedDoc.put("_id", uniqueId);
         cleanedDoc.put("cleaned_date", cleanedDate);
         cleanedDoc.put("data", finalData);
-    
-        // 9. Save into target DB
+
+        // 8. Save the cleaned document into the target DB.
         try {
             targetDb.create(cleanedDoc);
-            System.out.println("Cleaned data saved successfully with ID: " + uniqueId);
+            logger.info("Cleaned data saved successfully with ID: {}", uniqueId);
         } catch (Exception e) {
-            System.err.println("Error saving cleaned data: " + e.getMessage());
+            logger.error("Error saving cleaned data: {}", e.getMessage(), e);
         }
     }
+
 }
